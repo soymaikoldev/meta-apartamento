@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Plan</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Pantalla de bloqueo: lo único que ve alguien sin tu token -->
+<div id="gate" class="gate">
+  <div class="gate-box">
+    <div class="gate-lock">🔒</div>
+    <h1>Plan privado</h1>
+    <p id="gate-msg">Este tablero es solo tuyo. Conéctate con tu token para verlo.</p>
+    <button id="gate-btn" type="button" class="btn-primary">Conectarme</button>
+    <p class="gate-sync" id="gate-sync"></p>
+  </div>
+</div>
+
+<!-- El plan real: se arma por JS desde tu repo privado, nunca está en este archivo -->
+<main id="app" hidden></main>
+
+<!-- Diálogo del token -->
+<dialog id="tok" class="tok">
+  <form method="dialog" id="tok-form">
+    <h2>Conecta este dispositivo</h2>
+    <p id="t-msg" class="t-msg"></p>
+    <p class="t-help">Pega tu token de GitHub (el mismo del Content Hub). Se guarda solo en este navegador.</p>
+    <input id="t-input" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+    <div class="tok-row">
+      <button type="button" id="t-cancel" class="btn-ghost">Cancelar</button>
+      <button type="submit" class="btn-primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="script.js"></script>
+</body>
+</html>

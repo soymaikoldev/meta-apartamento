@@ -1,0 +1,157 @@
+/* Meta Apartamento · Maikol
+   Cascarón público: diseño y estructura. Los datos viven en el repo privado.
+   Layout: una columna, hero "estrella del norte" arriba, luego fases, motores, tiempos y acciones */
+:root{
+  color-scheme:light;
+  --bg:#eef3f3; --surface:#ffffff; --surface-2:#f6faf9;
+  --ink:#11292b; --muted:#5c6f70; --line:#d9e2e1;
+  --brand:#0d7a72; --gold:#a96f16; --gold-soft:#f1e3c7;
+  --good:#2f9e6b; --warn:#b67d14;
+  --display:"Space Grotesk",system-ui,sans-serif;
+  --body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#081516; --surface:#102425; --surface-2:#0d1e1f;
+  --ink:#e8f0ef; --muted:#93a8a7; --line:#1f3839;
+  --brand:#3bb9ad; --gold:#e2a94a; --gold-soft:#2a2414;
+  --good:#4cc48a; --warn:#e2b35a; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#081516; --surface:#102425; --surface-2:#0d1e1f;
+  --ink:#e8f0ef; --muted:#93a8a7; --line:#1f3839;
+  --brand:#3bb9ad; --gold:#e2a94a; --gold-soft:#2a2414;
+  --good:#4cc48a; --warn:#e2b35a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.5;font-size:15px;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- Botones base ---------- */
+.btn-primary{font-family:var(--display);font-weight:600;font-size:14px;background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 18px;cursor:pointer}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-ghost{font-family:var(--display);font-weight:600;font-size:14px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
+.btn-ghost:hover{color:var(--ink);border-color:var(--brand)}
+
+/* ---------- Pantalla de bloqueo ---------- */
+.gate{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:var(--bg);z-index:50}
+.gate-box{max-width:360px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:34px 26px}
+.gate-lock{font-size:30px;margin-bottom:10px}
+.gate-box h1{font-size:1.5rem;font-weight:700}
+.gate-box p{color:var(--muted);font-size:14px;margin:.6rem 0 1.3rem}
+.gate-sync{font-size:12px;min-height:1em;margin-top:1rem!important}
+
+/* ---------- Diálogo token ---------- */
+.tok{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:24px;max-width:400px;width:calc(100% - 32px)}
+.tok::backdrop{background:rgba(4,12,13,.55)}
+.tok h2{font-family:var(--display);font-size:1.2rem;margin:0 0 .4rem}
+.t-msg{color:var(--warn);font-size:13px;margin:0 0 .5rem}
+.t-msg:empty{display:none}
+.t-help{color:var(--muted);font-size:13px;margin:0 0 .9rem}
+.tok input{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink)}
+.tok-row{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+
+/* ---------- HERO ---------- */
+.hero{padding-top:2.4rem;padding-bottom:2.2rem;
+  background:radial-gradient(120% 140% at 85% -10%,color-mix(in srgb,var(--brand) 22%,transparent),transparent 60%),var(--surface);
+  border-bottom:1px solid var(--line)}
+.hero-in{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:1.6rem}
+.brandmark{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.02em}
+.brandmark span{color:var(--brand)}
+.top-actions{display:flex;align-items:center;gap:8px}
+.chip-btn{font-family:var(--display);font-size:12px;font-weight:600;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip-btn:hover{color:var(--ink);border-color:var(--brand)}
+.star{font-size:13px;color:var(--gold);font-weight:600;font-family:var(--display);letter-spacing:.04em;margin-bottom:.5rem}
+.hero h1{font-size:clamp(2rem,7vw,3.1rem);font-weight:700;line-height:1.04;letter-spacing:-.02em}
+.hero h1 em{font-style:normal;color:var(--brand)}
+.goal{display:flex;align-items:baseline;gap:.5rem;margin-top:1.1rem;flex-wrap:wrap}
+.goal .big{font-family:var(--display);font-weight:700;font-size:clamp(2.6rem,10vw,4rem);letter-spacing:-.03em;line-height:1}
+.goal .cap{color:var(--muted);font-size:14px}
+
+/* progreso */
+.prog{margin-top:1.4rem}
+.prog-track{height:14px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent);overflow:hidden;border:1px solid var(--line)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--gold));border-radius:999px;transition:width .5s ease}
+.prog-labels{display:flex;justify-content:space-between;margin-top:.5rem;font-size:12.5px;color:var(--muted);gap:10px;flex-wrap:wrap}
+.prog-labels b{color:var(--ink);font-weight:600}
+
+section{padding-block:2.2rem;border-bottom:1px solid var(--line)}
+.sec-head{margin-bottom:1.3rem}
+.sec-head h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em}
+.sec-head p{color:var(--muted);margin-top:.35rem;font-size:14px}
+
+/* reframe cards */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.two{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card .k{font-size:12.5px;color:var(--muted);font-weight:500}
+.card .v{font-family:var(--display);font-weight:700;font-size:1.9rem;margin-top:.25rem;letter-spacing:-.02em}
+.card .v small{font-size:1rem;color:var(--muted);font-weight:500}
+.card .note{font-size:13px;color:var(--muted);margin-top:.5rem}
+.hl{color:var(--gold)}
+
+/* fases */
+.phase{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;padding:16px 0;border-top:1px solid var(--line)}
+.phase:first-child{border-top:0}
+.pnum{font-family:var(--display);font-weight:700;font-size:1.1rem;width:40px;height:40px;display:grid;place-items:center;border-radius:11px;background:var(--surface-2);border:1px solid var(--line);color:var(--brand)}
+.phase.active .pnum{background:var(--brand);color:#fff;border-color:var(--brand)}
+.phase.done .pnum{background:var(--good);color:#fff;border-color:var(--good)}
+.ptitle{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ptitle h3{font-size:1.05rem;font-weight:600}
+.pill{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid;cursor:pointer;user-select:none}
+.pill.now{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.pill.next{color:var(--muted);border-color:var(--line);background:var(--surface-2)}
+.pill.done{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.pgoal{font-size:13.5px;color:var(--muted);margin-top:.4rem}
+.pgoal b{color:var(--ink);font-weight:600}
+.ptarget{font-family:var(--display);color:var(--brand);font-weight:600}
+
+/* motores */
+.motor{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.motor h3{font-size:1.05rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.motor .tag{font-size:11px;font-family:var(--display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:var(--gold-soft);padding:2px 8px;border-radius:999px}
+.motor ul{margin:.7rem 0 0;padding-left:1.1rem;color:var(--muted);font-size:13.5px}
+.motor li{margin:.25rem 0}
+.motor .range{font-family:var(--display);font-weight:700;font-size:1.3rem;margin-top:.8rem;color:var(--ink)}
+.motor .range small{font-weight:500;font-size:.85rem;color:var(--muted)}
+
+/* tabla tiempos */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--display);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+tr.hot td{color:var(--brand)}
+.caption{font-size:12.5px;color:var(--muted);margin-top:.7rem}
+
+/* esta semana */
+.week{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.week li{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;user-select:none}
+.week .chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--brand);flex:none;margin-top:1px;display:grid;place-items:center;color:transparent;font-size:14px;font-weight:700;line-height:1}
+.week li.done .chk{background:var(--brand);color:#fff}
+.week li.done .txt b{text-decoration:line-through;color:var(--muted)}
+.week .txt b{font-weight:600}
+.week .txt span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+.closing{padding-block:2rem}
+.closing p{color:var(--muted);font-size:14.5px;max-width:60ch}
+.closing .big{color:var(--ink);font-family:var(--display);font-weight:600;font-size:1.05rem;margin-bottom:.5rem}
+.foot{color:var(--muted);font-size:12px;padding-bottom:.5rem}
+
+/* números editables */
+.editable{cursor:text;border-bottom:1px dashed color-mix(in srgb,var(--brand) 55%,transparent);padding-bottom:1px}
+.editable:hover{background:color-mix(in srgb,var(--brand) 9%,transparent)}
+.edit-input{font:inherit;color:inherit;background:var(--surface-2);border:1px solid var(--brand);border-radius:6px;padding:0 6px;width:7ch;text-align:inherit}
+.sync-note{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--good)}
+.dot.busy{background:var(--warn)}
+.dot.err{background:#d8603f}
+.editmode #app{outline:2px dashed color-mix(in srgb,var(--brand) 40%,transparent);outline-offset:-2px}
