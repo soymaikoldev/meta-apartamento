@@ -91,7 +91,7 @@ function render() {
       <div class="ptitle"><h3>${esc(p.title)}</h3>${pill}</div>
       <div class="pgoal">${p.body || ""}</div>
       <div class="pgoal">Meta: <span class="ptarget">${esc(p.meta)}</span></div>
-    </div>`;
+    </div></div>`;
   }).join("");
 
   const motoresHtml = (data.motores || []).map(m => `<div class="motor">
