@@ -12,6 +12,11 @@ const ls = {
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = n => "US$" + Number(n || 0).toLocaleString("es-VE");
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+const ymd = dt => dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+const TODAY = ymd(new Date());
+const monthYear = dt => { const s = dt.toLocaleDateString("es-VE", { month: "long", year: "numeric" }); return s.charAt(0).toUpperCase() + s.slice(1); };
+const fechaCorta = d => { const s = new Date(d + "T00:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" }); return s; };
 
 let token = ls.get("hub.token");
 let data = null, sha = null, saveTimer = null, saving = false, dirty = false;
@@ -78,9 +83,32 @@ function showGate(msg) { $("#gate").hidden = false; $("#app").hidden = true; $("
 
 function render() {
   if (!data) return;
-  const inicial = Number(data.inicial || 0), saved = Number(data.saved || 0);
+  const inicial = Number(data.inicial || 0);
+  const aportes = data.aportes || [];
+  const saved = aportes.length ? aportes.reduce((s, a) => s + Number(a.amt || 0), 0) : Number(data.saved || 0);
   const pct = inicial ? Math.min(100, saved / inicial * 100) : 0;
   const fillW = Math.max(saved > 0 ? 2 : 0.8, pct);
+
+  // proyección
+  const faltante = Math.max(0, inicial - saved);
+  const since = ymd(new Date(Date.now() - 90 * 864e5));
+  const ritmoReal = Math.round(aportes.filter(a => a.d >= since).reduce((s, a) => s + Number(a.amt || 0), 0) / 3);
+  const ritmo = data.ritmoMeta != null ? Number(data.ritmoMeta) : (ritmoReal || Number((data.reframe && data.reframe.ritmo) || 0));
+  const meses = ritmo > 0 && faltante > 0 ? Math.ceil(faltante / ritmo) : null;
+  const fecha = meses != null ? monthYear(new Date(new Date().getFullYear(), new Date().getMonth() + meses, 1)) : null;
+  const fechaTxt = saved >= inicial && inicial > 0
+    ? "¡Llegaste a la inicial! 🎉 Ahora, por el apartamento completo."
+    : meses != null ? `llegas a la inicial en <b>${fecha}</b> <span class="meses">(~${meses} ${meses === 1 ? "mes" : "meses"})</span>`
+    : "pon tu ritmo para ver la fecha";
+
+  const aporteListHtml = aportes.length
+    ? aportes.slice(0, 8).map(a => `<li data-ap="${esc(a.id)}">
+        <span class="ap-d">${esc(fechaCorta(a.d))}</span>
+        <span class="ap-src">${esc(a.src || "Aporte")}</span>
+        <b class="ap-amt">+${fmt(a.amt)}</b>
+        <button class="ap-del" data-apdel="${esc(a.id)}" type="button" aria-label="Borrar">&times;</button></li>`).join("")
+      + (aportes.length > 8 ? `<li class="ap-more">y ${aportes.length - 8} más…</li>` : "")
+    : `<li class="ap-empty">Aún sin aportes. Anota el primero arriba 👆</li>`;
 
   const phaseHtml = (data.phases || []).map((p, i) => {
     const cls = p.status === "now" ? "active" : p.status === "done" ? "done" : "";
@@ -120,7 +148,7 @@ function render() {
     <div class="prog">
       <div class="prog-track"><div class="prog-fill" style="width:${fillW}%"></div></div>
       <div class="prog-labels">
-        <span>Hoy: deuda <b class="editable" data-edit="debt">&minus;${fmt(data.debt)}</b> · ahorrado <b class="editable" data-edit="saved">${fmt(saved)}</b></span>
+        <span>Hoy: deuda <b class="editable" data-edit="debt">&minus;${fmt(data.debt)}</b> · ahorrado <b>${fmt(saved)}</b></span>
         <span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> de la inicial</span>
       </div>
     </div>
@@ -137,6 +165,30 @@ function render() {
         <div class="card"><div class="k">Lo que hace falta de verdad</div>
           <div class="v">${fmt(data.reframe && data.reframe.ritmo)}<small>/mes de ahorro</small></div>
           <div class="note">A ese ritmo, la inicial sale en ~2 años. El reto no es el número: es llegar a ese ingreso.</div></div>
+      </div>
+    </section>
+
+    <section class="ahorro">
+      <div class="sec-head"><h2>Tu ahorro para la inicial</h2>
+        <p>Cada vez que guardes algo, anótalo. Lo que no se fuga, se acerca.</p></div>
+
+      <div class="save-top">
+        <div class="save-num"><b>${fmt(saved)}</b> <span>de ${fmt(inicial)} · ${pct.toFixed(pct < 10 ? 1 : 0)}%</span></div>
+        <div class="save-bar"><i style="width:${fillW}%"></i></div>
+      </div>
+
+      <div class="aporte-add">
+        <input id="ap-amt" inputmode="decimal" placeholder="Monto US$">
+        <input id="ap-src" placeholder="¿De dónde salió? (opcional)">
+        <button class="btn-add" id="ap-add" type="button">Guardar aporte</button>
+      </div>
+
+      <ul class="aporte-list">${aporteListHtml}</ul>
+
+      <div class="proj">
+        <div class="proj-row"><span>Te falta</span><b>${fmt(faltante)}</b></div>
+        <div class="proj-row"><span>Tu ritmo (últimos 3 meses)</span><b>${ritmoReal > 0 ? fmt(ritmoReal) + "/mes" : "aún sin datos"}</b></div>
+        <div class="proj-sim">Si guardas US$<input id="ritmo" class="ritmo-in" inputmode="numeric" value="${ritmo}">/mes → ${fechaTxt}</div>
       </div>
     </section>
 
@@ -206,7 +258,31 @@ function wire() {
     save(); render();
   });
 
+  // aportes
+  if ($("#ap-add")) {
+    $("#ap-add").onclick = addAporte;
+    $("#ap-amt").addEventListener("keydown", ev => { if (ev.key === "Enter") addAporte(); });
+  }
+  document.querySelectorAll("[data-apdel]").forEach(b => b.onclick = () => delAporte(b.getAttribute("data-apdel")));
+  const ri = $("#ritmo");
+  if (ri) ri.addEventListener("change", e => { const v = parseInt(String(e.target.value).replace(/[^\d]/g, ""), 10); data.ritmoMeta = isNaN(v) ? 0 : v; save(); render(); });
+
   $("#logout").onclick = e => { e.preventDefault(); if (!confirm("¿Quitar el token de este dispositivo? Tus datos quedan a salvo en el repo privado.")) return; ls.del("hub.token"); token = null; data = null; showGate("Desconectado. Conéctate de nuevo cuando quieras."); };
+}
+
+function syncSaved() { data.saved = (data.aportes || []).reduce((s, a) => s + Number(a.amt || 0), 0); }
+function addAporte() {
+  const amtEl = $("#ap-amt"), srcEl = $("#ap-src");
+  const amt = parseFloat(String(amtEl.value).replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, ""));
+  if (!amt || amt <= 0) { amtEl.focus(); amtEl.classList.add("bad"); return; }
+  data.aportes = data.aportes || [];
+  data.aportes.unshift({ id: uid(), d: TODAY, amt: Math.round(amt * 100) / 100, src: (srcEl.value || "").trim() });
+  syncSaved(); save(); render();
+}
+function delAporte(id) {
+  if (!confirm("¿Borrar este aporte?")) return;
+  data.aportes = (data.aportes || []).filter(a => a.id !== id);
+  syncSaved(); save(); render();
 }
 
 function editNumber(el, key) {
