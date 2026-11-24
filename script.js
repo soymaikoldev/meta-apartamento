@@ -18,6 +18,16 @@ const TODAY = ymd(new Date());
 const monthYear = dt => { const s = dt.toLocaleDateString("es-VE", { month: "long", year: "numeric" }); return s.charAt(0).toUpperCase() + s.slice(1); };
 const fechaCorta = d => { const s = new Date(d + "T00:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" }); return s; };
 
+/* íconos de línea (lucide, inline) */
+const ICONS = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>'
+};
+const ic = (n, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ""}</svg>`;
+
 let token = ls.get("hub.token");
 let data = null, sha = null, saveTimer = null, saving = false, dirty = false;
 
@@ -97,7 +107,7 @@ function render() {
   const meses = ritmo > 0 && faltante > 0 ? Math.ceil(faltante / ritmo) : null;
   const fecha = meses != null ? monthYear(new Date(new Date().getFullYear(), new Date().getMonth() + meses, 1)) : null;
   const fechaTxt = saved >= inicial && inicial > 0
-    ? "¡Llegaste a la inicial! 🎉 Ahora, por el apartamento completo."
+    ? "Llegaste a la inicial. Ahora, por el apartamento completo."
     : meses != null ? `llegas a la inicial en <b>${fecha}</b> <span class="meses">(~${meses} ${meses === 1 ? "mes" : "meses"})</span>`
     : "pon tu ritmo para ver la fecha";
 
@@ -106,14 +116,14 @@ function render() {
         <span class="ap-d">${esc(fechaCorta(a.d))}</span>
         <span class="ap-src">${esc(a.src || "Aporte")}</span>
         <b class="ap-amt">+${fmt(a.amt)}</b>
-        <button class="ap-del" data-apdel="${esc(a.id)}" type="button" aria-label="Borrar">&times;</button></li>`).join("")
+        <button class="ap-del" data-apdel="${esc(a.id)}" type="button" aria-label="Borrar">${ic("x")}</button></li>`).join("")
       + (aportes.length > 8 ? `<li class="ap-more">y ${aportes.length - 8} más…</li>` : "")
-    : `<li class="ap-empty">Aún sin aportes. Anota el primero arriba 👆</li>`;
+    : `<li class="ap-empty">Aún sin aportes. Anota el primero arriba.</li>`;
 
   const phaseHtml = (data.phases || []).map((p, i) => {
     const cls = p.status === "now" ? "active" : p.status === "done" ? "done" : "";
     const pill = p.status === "now" ? `<span class="pill now" data-phase="${i}">Aquí estás</span>`
-      : p.status === "done" ? `<span class="pill done" data-phase="${i}">Hecho ✓</span>`
+      : p.status === "done" ? `<span class="pill done" data-phase="${i}">${ic("check")} Hecho</span>`
       : `<span class="pill next" data-phase="${i}">${esc(p.badge || "Siguiente")}</span>`;
     return `<div class="phase ${cls}"><div class="pnum">${esc(p.n)}</div><div>
       <div class="ptitle"><h3>${esc(p.title)}</h3>${pill}</div>
@@ -131,18 +141,18 @@ function render() {
   const tablaHtml = (data.tabla || []).map(r => `<tr class="${r.hot ? "hot" : ""}"><td class="num">${esc(r.ahorro)}</td><td class="num">${esc(r.inicial)}</td><td class="num">${esc(r.full)}</td></tr>`).join("");
 
   const weekHtml = (data.week || []).map(w => `<li data-week="${esc(w.id)}" class="${w.done ? "done" : ""}">
-    <span class="chk">✓</span><span class="txt"><b>${esc(w.title)}</b><span>${esc(w.note)}</span></span></li>`).join("");
+    <span class="chk">${ic("check")}</span><span class="txt"><b>${esc(w.title)}</b><span>${esc(w.note)}</span></span></li>`).join("");
 
   $("#app").innerHTML = `
   <header class="hero"><div class="hero-in">
     <div class="toprow">
-      <div class="brandmark">maikol<span>·</span>plan</div>
+      <div class="brandmark">mi <em>plan</em></div>
       <div class="top-actions">
         <span class="sync-note" id="syncnote"><span class="dot"></span></span>
         <button class="chip-btn" id="tt" type="button">tema</button>
       </div>
     </div>
-    <div class="star">★ ESTRELLA DEL NORTE</div>
+    <div class="eyebrow">Tu estrella del norte</div>
     <h1>${esc(data.headline)}</h1>
     <div class="goal"><span class="big">${fmt(data.goal)}</span><span class="cap">${esc(data.goalCaption)}</span></div>
     <div class="prog">
@@ -180,7 +190,7 @@ function render() {
       <div class="aporte-add">
         <input id="ap-amt" inputmode="decimal" placeholder="Monto US$">
         <input id="ap-src" placeholder="¿De dónde salió? (opcional)">
-        <button class="btn-add" id="ap-add" type="button">Guardar aporte</button>
+        <button class="btn-add" id="ap-add" type="button">${ic("plus")} Guardar aporte</button>
       </div>
 
       <ul class="aporte-list">${aporteListHtml}</ul>
@@ -237,7 +247,7 @@ function wire() {
   // tema
   const btn = $("#tt");
   const cur = () => { const a = document.documentElement.getAttribute("data-theme"); return a || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); };
-  const label = () => btn.textContent = cur() === "dark" ? "☾ oscuro" : "☀ claro";
+  const label = () => btn.innerHTML = cur() === "dark" ? ic("moon") + " oscuro" : ic("sun") + " claro";
   label();
   btn.onclick = () => { const n = cur() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); ls.set("meta.theme", n); label(); };
 
