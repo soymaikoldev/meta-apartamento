@@ -233,3 +233,5 @@ function askToken(msg = "") { $("#t-msg").textContent = msg; $("#t-input").value
   $("#tok-form").onsubmit = () => { const t = $("#t-input").value.trim(); if (!t) return; token = t; ls.set("hub.token", t); $("#tok").close(); load(); };
   load();
 })();
+
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {})); }
