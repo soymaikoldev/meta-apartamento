@@ -49,6 +49,8 @@ const ICONS = {
   check: '<path d="M20 6 9 17l-5-5"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  rotate: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>'
 };
@@ -56,6 +58,9 @@ const ic = (n, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="n
 
 let token = ls.get("hub.token");
 let data = null, sha = null, saveTimer = null, saving = false, dirty = false;
+let verTodos = false, editAp = null, editWk = null; // estado de vista (no se guarda)
+const HITOS = [1, 5, 10, 25, 50, 75, 100];
+const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 const b64e = s => { const b = new TextEncoder().encode(s); let r = ""; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(r); };
 const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, "")), c => c.charCodeAt(0)));
@@ -92,7 +97,7 @@ async function push() {
   saving = false;
   if (dirty && navigator.onLine !== false) { clearTimeout(saveTimer); saveTimer = setTimeout(push, 4000); }
 }
-function save() { ls.set("meta.cache", JSON.stringify(data)); if (!token) return; syncDot("busy", "Cambios sin guardar…"); clearTimeout(saveTimer); saveTimer = setTimeout(push, 900); }
+function save() { data.updated = new Date().toLocaleDateString("es-VE", { day: "2-digit", month: "2-digit", year: "numeric" }); ls.set("meta.cache", JSON.stringify(data)); if (!token) return; syncDot("busy", "Cambios sin guardar…"); clearTimeout(saveTimer); saveTimer = setTimeout(push, 900); }
 const hora = () => new Date().toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
 
 /* ---------- Carga ---------- */
@@ -140,14 +145,50 @@ function render() {
     : meses != null ? `llegamos en <b>${fecha}</b> <span class="meses">(~${meses} ${meses === 1 ? "mes" : "meses"})</span>`
     : "pon un ritmo para ver la fecha";
 
-  const aporteListHtml = aportes.length
-    ? aportes.slice(0, 8).map(a => `<li data-ap="${esc(a.id)}">
+  const ordenados = aportes.slice().sort((a, b) => String(b.d).localeCompare(String(a.d)));
+  const visibles = verTodos ? ordenados : ordenados.slice(0, 8);
+  const aporteRow = a => a.id === editAp
+    ? `<li class="ap-edit" data-ap="${esc(a.id)}">
+        <input type="date" class="ae-d" value="${esc(a.d)}" max="${TODAY}" aria-label="Fecha">
+        <input class="ae-amt" inputmode="decimal" value="${esc(a.amt)}" aria-label="Monto US$">
+        <input class="ae-src" value="${esc(a.src)}" placeholder="¿De dónde salió?" aria-label="Origen">
+        <select class="ae-who" aria-label="Quién">${PERSONAS().map(n => `<option${n === a.who ? " selected" : ""}>${esc(n)}</option>`).join("")}</select>
+        <span class="ae-actions"><button type="button" class="btn-ghost sm" data-apcancel>Cancelar</button><button type="button" class="btn-add sm" data-apsave="${esc(a.id)}">Guardar</button></span></li>`
+    : `<li data-ap="${esc(a.id)}">
         <span class="ap-d">${esc(fechaCorta(a.d))}</span>
         <span class="ap-src">${a.who ? `<span class="ap-who">${esc(a.who)}</span>` : ""}${esc(a.src || "Aporte")}</span>
         <b class="ap-amt">+${fmt(a.amt)}</b>
-        <button class="ap-del" data-apdel="${esc(a.id)}" type="button" aria-label="Borrar">${ic("x")}</button></li>`).join("")
-      + (aportes.length > 8 ? `<li class="ap-more">y ${aportes.length - 8} más…</li>` : "")
+        <button class="ap-ico" data-apedit="${esc(a.id)}" type="button" aria-label="Editar aporte">${ic("pencil")}</button>
+        <button class="ap-ico ap-del" data-apdel="${esc(a.id)}" type="button" aria-label="Borrar aporte">${ic("x")}</button></li>`;
+  const aporteListHtml = aportes.length
+    ? visibles.map(aporteRow).join("")
+      + (aportes.length > 8 ? `<li class="ap-more"><button type="button" class="link-btn" id="ap-toggle">${verTodos ? "Ver solo los últimos 8" : `Ver todos (${aportes.length})`}</button></li>` : "")
     : `<li class="ap-empty">Aún sin aportes. Anoten el primero arriba.</li>`;
+
+  // hitos
+  const proxHito = HITOS.find(h => pct < h);
+  const hitosHtml = `<div class="hitos" aria-label="Hitos">${HITOS.map(h => `<span class="hito${pct >= h ? " on" : ""}" title="${fmt(meta * h / 100)}">${pct >= h ? ic("check") : ""}${h}%</span>`).join("")}</div>
+    ${proxHito != null && meta > 0 ? `<div class="hito-next">Próximo hito: <b>${proxHito}%</b> · ${fmt(meta * proxHito / 100)} ahorrados. Faltan <b>${fmt(Math.max(0, Math.ceil(meta * proxHito / 100 - saved)))}</b>.</div>` : ""}`;
+
+  // aportes por mes: últimos 12 meses
+  const hoy = new Date();
+  const mesesChart = Array.from({ length: 12 }, (_, i) => {
+    const dt = new Date(hoy.getFullYear(), hoy.getMonth() - 11 + i, 1);
+    const key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
+    return { key, label: MES_CORTO[dt.getMonth()], largo: monthYear(dt), t: aportes.filter(a => String(a.d).startsWith(key)).reduce((s, a) => s + Number(a.amt || 0), 0) };
+  });
+  const refMes = Number((data.reframe && data.reframe.ritmo) || 0);
+  const maxMes = Math.max(refMes, ...mesesChart.map(m => m.t)) || 1;
+  const chartHtml = !aportes.length
+    ? `<p class="chart-empty">Cuando anoten aportes, aquí se ve cuánto guardamos cada mes.</p>`
+    : `<div class="chart" role="img" aria-label="Aportes por mes, últimos 12 meses: ${mesesChart.map(m => `${m.largo} ${fmt(m.t)}`).join(", ")}">
+        ${refMes ? `<div class="chart-ref" style="bottom:${refMes / maxMes * 100}%"><span>meta ${fmt(refMes)}/mes</span></div>` : ""}
+        ${mesesChart.map((m, i) => `<div class="mbar${i === 11 ? " cur" : ""}${i < 2 ? " l" : i > 9 ? " r" : ""}" tabindex="0">
+          ${i === 11 && m.t > 0 ? `<em class="mval" style="bottom:${m.t / maxMes * 100}%">${fmt(m.t)}</em>` : ""}
+          <i style="height:${m.t > 0 ? Math.max(1.5, m.t / maxMes * 100) : 0}%"></i>
+          <span class="tip">${esc(m.largo)} · <b>${fmt(m.t)}</b></span></div>`).join("")}
+      </div>
+      <div class="chart-x" aria-hidden="true">${mesesChart.map(m => `<span>${m.label}</span>`).join("")}</div>`;
   const porPersona = PERSONAS().map(n => ({ n, t: aportes.filter(a => a.who === n).reduce((s, a) => s + Number(a.amt || 0), 0) }));
   const porPersonaHtml = aportes.some(a => a.who)
     ? `<div class="ap-split">${porPersona.map(p => `<span>${esc(p.n)} <b>${fmt(p.t)}</b></span>`).join("")}</div>` : "";
@@ -187,8 +228,17 @@ function render() {
     <td class="num">${faltante > 0 ? duracion(faltante / m) : "listo"}</td>
     <td class="num">${faltante > 0 ? monthYear(new Date(new Date().getFullYear(), new Date().getMonth() + Math.ceil(faltante / m), 1)) : "—"}</td></tr>`).join("");
 
-  const weekHtml = (data.week || []).map(w => `<li data-week="${esc(w.id)}" class="${w.done ? "done" : ""}">
-    <span class="chk">${ic("check")}</span><span class="txt"><b>${esc(w.title)}</b><span>${esc(w.note)}</span></span></li>`).join("");
+  const week = data.week || [];
+  const weekHtml = week.map(w => w.id === editWk
+    ? `<li class="wk-edit" data-wk="${esc(w.id)}">
+        <input class="we-title" value="${esc(w.title)}" placeholder="Tarea" aria-label="Tarea">
+        <input class="we-note" value="${esc(w.note)}" placeholder="Detalle (opcional)" aria-label="Detalle">
+        <span class="ae-actions"><button type="button" class="btn-ghost sm" data-wkcancel>Cancelar</button><button type="button" class="btn-add sm" data-wksave="${esc(w.id)}">Guardar</button></span></li>`
+    : `<li data-week="${esc(w.id)}" class="${w.done ? "done" : ""}">
+        <span class="chk">${ic("check")}</span><span class="txt"><b>${esc(w.title)}</b>${w.note ? `<span>${esc(w.note)}</span>` : ""}</span>
+        <span class="wk-actions"><button class="ap-ico" data-wkedit="${esc(w.id)}" type="button" aria-label="Editar tarea">${ic("pencil")}</button><button class="ap-ico ap-del" data-wkdel="${esc(w.id)}" type="button" aria-label="Borrar tarea">${ic("x")}</button></span></li>`).join("")
+    || `<li class="wk-empty">Sin tareas. ¿Qué es lo más concreto que podemos hacer esta semana?</li>`;
+  const hechas = week.filter(w => w.done).length;
 
   $("#app").innerHTML = `
   <header class="hero"><div class="hero-in">
@@ -201,13 +251,14 @@ function render() {
     </div>
     <div class="eyebrow">Nuestra estrella del norte</div>
     <h1>${esc(data.headline)}</h1>
-    <div class="goal"><span class="big">${fmt(meta)}</span><span class="cap">${esc(data.goalCaption || "el apartamento, listo para mudarnos")}</span></div>
+    <div class="goal"><span class="big editable" data-edit="goal" title="Toca para cambiar el precio">${fmt(meta)}</span><span class="cap">${esc(data.goalCaption || "el apartamento, listo para mudarnos")}</span></div>
     <div class="prog">
       <div class="prog-track"><div class="prog-fill" style="width:${fillW}%"></div></div>
       <div class="prog-labels">
         <span>Ahorrado <b>${fmt(saved)}</b> de ${fmt(meta)}</span>
         <span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> del apartamento</span>
       </div>
+      ${hitosHtml}
     </div>
     <div class="debt">
       <div class="debt-head">${debt > 0
@@ -255,6 +306,11 @@ function render() {
         <div class="proj-row"><span>Nuestro ritmo (últimos 3 meses)</span><b>${ritmoReal > 0 ? fmt(ritmoReal) + "/mes" : "aún sin datos"}</b></div>
         <div class="proj-sim">Si guardamos US$<input id="ritmo" class="ritmo-in" inputmode="numeric" value="${ritmo}">/mes → ${fechaTxt}</div>
       </div>
+
+      <div class="chart-block">
+        <h3 class="chart-title">Aportes por mes</h3>
+        ${chartHtml}
+      </div>
     </section>
 
     <section>
@@ -279,9 +335,15 @@ function render() {
     </section>
 
     <section>
-      <div class="sec-head"><h2>Esta semana</h2>
-        <p>Lo pensado ya está pensado. Lo que mueve la aguja es algo tangible. Toca cada tarea para marcarla.</p></div>
+      <div class="sec-head sec-head-row"><div><h2>Esta semana</h2>
+        <p>Lo pensado ya está pensado. Lo que mueve la aguja es algo tangible. Toca cada tarea para marcarla.${data.weekOf ? ` <span class="wk-since">Desde el ${esc(fechaCorta(data.weekOf))}</span>` : ""}</p></div>
+        ${hechas ? `<button type="button" class="chip-btn" id="wk-new">${ic("rotate")} Nueva semana</button>` : ""}</div>
       <ul class="week" id="week">${weekHtml}</ul>
+      <div class="wk-add">
+        <input id="wk-title" placeholder="Nueva tarea" aria-label="Nueva tarea">
+        <input id="wk-note" placeholder="Detalle (opcional)" aria-label="Detalle">
+        <button class="btn-add" id="wk-add" type="button">${ic("plus")} Agregar</button>
+      </div>
     </section>
 
     <div class="closing">
@@ -310,10 +372,30 @@ function wire() {
   document.querySelectorAll(".editable").forEach(el => el.onclick = () => editNumber(el, el.getAttribute("data-edit")));
 
   // tareas de la semana
-  document.querySelectorAll("#week li").forEach(li => li.onclick = () => {
+  document.querySelectorAll("#week li[data-week]").forEach(li => li.onclick = e => {
+    if (e.target.closest("button")) return;
     const id = li.getAttribute("data-week"), w = data.week.find(x => x.id === id);
-    if (!w) return; w.done = !w.done; li.classList.toggle("done", w.done); save();
+    if (!w) return; w.done = !w.done; save(); render();
   });
+  const on = (sel, fn) => document.querySelectorAll(sel).forEach(b => b.onclick = e => { e.stopPropagation(); fn(b, e); });
+  on("[data-wkedit]", b => { editWk = b.getAttribute("data-wkedit"); render(); const t = $(".we-title"); if (t) t.focus(); });
+  on("[data-wkcancel]", () => { editWk = null; render(); });
+  on("[data-wksave]", b => saveWeek(b.getAttribute("data-wksave")));
+  on("[data-wkdel]", b => {
+    const w = data.week.find(x => x.id === b.getAttribute("data-wkdel"));
+    if (!w || !confirm(`¿Borrar la tarea "${w.title}"?`)) return;
+    data.week = data.week.filter(x => x !== w); save(); render();
+  });
+  document.querySelectorAll(".wk-edit input").forEach(i => i.onkeydown = ev => { if (ev.key === "Enter") saveWeek(editWk); if (ev.key === "Escape") { editWk = null; render(); } });
+  if ($("#wk-add")) {
+    $("#wk-add").onclick = addWeek;
+    ["#wk-title", "#wk-note"].forEach(s => $(s).addEventListener("keydown", ev => { if (ev.key === "Enter") addWeek(); }));
+  }
+  if ($("#wk-new")) $("#wk-new").onclick = () => {
+    const n = data.week.filter(w => w.done).length;
+    if (!confirm(`¿Empezar una semana nueva? Se quitan las ${n} tareas hechas; las pendientes se quedan.`)) return;
+    data.week = data.week.filter(w => !w.done); data.weekOf = TODAY; save(); render();
+  };
 
   // ciclar estado de fase
   document.querySelectorAll(".pill[data-phase]").forEach(p => p.onclick = e => {
@@ -333,6 +415,11 @@ function wire() {
     document.querySelectorAll(".who-btn").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
   });
   document.querySelectorAll("[data-apdel]").forEach(b => b.onclick = () => delAporte(b.getAttribute("data-apdel")));
+  on("[data-apedit]", b => { editAp = b.getAttribute("data-apedit"); render(); const t = $(".ae-amt"); if (t) { t.focus(); t.select(); } });
+  on("[data-apcancel]", () => { editAp = null; render(); });
+  on("[data-apsave]", b => saveAporte(b.getAttribute("data-apsave")));
+  document.querySelectorAll(".ap-edit input").forEach(i => i.onkeydown = ev => { if (ev.key === "Enter") saveAporte(editAp); if (ev.key === "Escape") { editAp = null; render(); } });
+  if ($("#ap-toggle")) $("#ap-toggle").onclick = () => { verTodos = !verTodos; render(); };
   const ri = $("#ritmo");
   if (ri) ri.addEventListener("change", e => { const v = parseInt(String(e.target.value).replace(/[^\d]/g, ""), 10); data.ritmoMeta = isNaN(v) ? 0 : v; save(); render(); });
 
@@ -340,13 +427,56 @@ function wire() {
 }
 
 function syncSaved() { data.saved = (data.aportes || []).reduce((s, a) => s + Number(a.amt || 0), 0); }
+const pctAhorro = () => { const m = Number(data.goal || 0); return m ? (data.aportes || []).reduce((s, a) => s + Number(a.amt || 0), 0) / m * 100 : 0; };
+function celebrarHito(antes) {
+  const despues = pctAhorro();
+  const h = HITOS.filter(x => antes < x && despues >= x).pop();
+  if (h) toast(h === 100 ? "¡Llegamos! Todo el apartamento ahorrado." : `¡Llegamos al ${h}%! ${fmt(Number(data.goal) * h / 100)} ahorrados.`);
+}
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.setAttribute("role", "status"); t.innerHTML = `${ic("check")}<span>${esc(msg)}</span>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("out"), 4200);
+  setTimeout(() => t.remove(), 4800);
+}
 function addAporte() {
   const amtEl = $("#ap-amt"), srcEl = $("#ap-src");
   const amt = parseMonto(amtEl.value);
   if (!amt || amt <= 0) { amtEl.focus(); amtEl.classList.add("bad"); return; }
+  const antes = pctAhorro();
   data.aportes = data.aportes || [];
   data.aportes.unshift({ id: uid(), d: TODAY, amt: Math.round(amt * 100) / 100, src: (srcEl.value || "").trim(), who: (document.querySelector(".who-btn.on") || {}).dataset?.who || PERSONAS()[0] });
-  syncSaved(); save(); render();
+  syncSaved(); save(); render(); celebrarHito(antes);
+}
+function saveAporte(id) {
+  const a = (data.aportes || []).find(x => x.id === id), li = document.querySelector(`.ap-edit[data-ap="${id}"]`);
+  if (!a || !li) return;
+  const amtEl = li.querySelector(".ae-amt"), amt = parseMonto(amtEl.value);
+  if (!amt || amt <= 0) { amtEl.focus(); amtEl.classList.add("bad"); return; }
+  const antes = pctAhorro();
+  const d = li.querySelector(".ae-d").value;
+  a.amt = Math.round(amt * 100) / 100;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) a.d = d;
+  a.src = li.querySelector(".ae-src").value.trim();
+  a.who = li.querySelector(".ae-who").value;
+  editAp = null; syncSaved(); save(); render(); celebrarHito(antes);
+}
+function addWeek() {
+  const t = $("#wk-title"), n = $("#wk-note"), title = t.value.trim();
+  if (!title) { t.focus(); return; }
+  data.week = data.week || [];
+  if (!data.weekOf) data.weekOf = TODAY;
+  data.week.push({ id: uid(), title, note: n.value.trim(), done: false });
+  save(); render(); $("#wk-title").focus();
+}
+function saveWeek(id) {
+  const w = (data.week || []).find(x => x.id === id), li = document.querySelector(`.wk-edit[data-wk="${id}"]`);
+  if (!w || !li) return;
+  const title = li.querySelector(".we-title").value.trim();
+  if (!title) { li.querySelector(".we-title").focus(); return; }
+  w.title = title; w.note = li.querySelector(".we-note").value.trim();
+  editWk = null; save(); render();
 }
 function delAporte(id) {
   if (!confirm("¿Borrar este aporte?")) return;
@@ -358,13 +488,19 @@ function editNumber(el, key) {
   const cur = Number(data[key] || 0);
   const inp = document.createElement("input");
   inp.className = "edit-input"; inp.value = cur; inp.inputMode = "numeric";
+  if (key === "goal") inp.style.width = "8ch";
   el.replaceChildren(inp); inp.focus(); inp.select();
+  let hecho = false;
   const commit = () => {
+    if (hecho) return; hecho = true;
     const v = parseInt(String(inp.value).replace(/[^\d]/g, ""), 10);
-    if (!isNaN(v)) { data[key] = v; if (key === "debt" && v > Number(data.debtStart || 0)) data.debtStart = v; save(); }
+    const valido = !isNaN(v) && (key !== "goal" || v > 0);
+    const antes = Number(data[key] || 0);
+    if (valido) { data[key] = v; if (key === "debt" && v > Number(data.debtStart || 0)) data.debtStart = v; save(); }
     render();
+    if (valido && key === "debt" && v === 0 && antes > 0) toast("¡Deuda en cero! Fase 0 superada.");
   };
-  inp.onkeydown = ev => { if (ev.key === "Enter") commit(); if (ev.key === "Escape") render(); };
+  inp.onkeydown = ev => { if (ev.key === "Enter") commit(); if (ev.key === "Escape") { hecho = true; render(); } };
   inp.onblur = commit;
 }
 
