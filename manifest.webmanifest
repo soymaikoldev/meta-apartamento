@@ -1,6 +1,6 @@
 {
-  "name": "Mi Plan",
-  "short_name": "Mi Plan",
+  "name": "Nuestro plan",
+  "short_name": "Nuestro plan",
   "description": "El camino al apartamento en Lechería: meta, fases y motores de ingreso.",
   "start_url": "./",
   "scope": "./",

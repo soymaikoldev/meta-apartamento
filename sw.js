@@ -1,5 +1,5 @@
-/* Mi Plan — service worker: cascarón offline. Nunca cachea datos (GitHub API). */
-const C = "miplan-v1";
+/* Nuestro plan — service worker: cascarón offline. Nunca cachea datos (GitHub API). */
+const C = "miplan-v2";
 const SHELL = ["./", "./index.html", "./styles.css", "./script.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

@@ -189,3 +189,23 @@ tr.hot td{color:var(--acc-ink)}
 .dot.ok{background:var(--acc)}
 .dot.busy{background:var(--muted)}
 .dot.err{background:var(--bad)}
+
+/* hero: precio total como dato secundario + deuda */
+.goal-sub{margin-top:6px;font-size:14px;color:var(--muted);max-width:52ch}
+.goal-sub b{color:var(--ink);font-weight:600}
+.debt{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.debt-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.debt-head b{color:var(--ink);font-weight:600}
+.debt-head .ico{width:14px;height:14px;vertical-align:-2px;color:var(--acc-ink)}
+.debt-track{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;border:1px solid var(--line)}
+.debt-track>i{display:block;height:100%;background:var(--acc);border-radius:999px;transition:width .5s ease}
+
+/* quién aporta */
+.who{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-ctl);overflow:hidden}
+.who-btn{font:inherit;font-size:14px;background:var(--surface);color:var(--muted);border:0;padding:0 14px;cursor:pointer;min-height:44px}
+.who-btn+.who-btn{border-left:1px solid var(--line-2)}
+.who-btn.on{background:var(--acc);color:#fff}
+.ap-who{display:inline-block;font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:999px;padding:1px 8px;margin-right:8px;vertical-align:1px}
+.ap-split{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:-4px 0 14px}
+.ap-split b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.tag-ritmo{font-size:11px;color:var(--acc-ink);font-weight:500;margin-left:4px}
