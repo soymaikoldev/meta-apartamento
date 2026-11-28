@@ -1,5 +1,5 @@
-/* Nuestro plan — service worker: cascarón offline. Nunca cachea datos (GitHub API). */
-const C = "miplan-v2";
+/* Nuestro plan — service worker: cascarón offline (red primero). Nunca cachea datos (GitHub API). */
+const C = "miplan-v3";
 const SHELL = ["./", "./index.html", "./styles.css", "./script.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -13,9 +13,11 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   if (u.hostname === "api.github.com") return; // datos privados: siempre a la red
   if (u.origin !== location.origin) return; // fuentes, etc: deja al navegador
+  // red primero: cada versión nueva llega sola; la caché es solo para cuando no hay conexión
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const cp = res.clone(); caches.open(C).then(c => c.put(e.request, cp)); return res;
-    }).catch(() => caches.match("./index.html")))
+    fetch(e.request).then(res => {
+      if (res.ok) { const cp = res.clone(); caches.open(C).then(c => c.put(e.request, cp)); }
+      return res;
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match("./index.html")))
   );
 });

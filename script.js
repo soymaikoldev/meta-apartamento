@@ -119,14 +119,14 @@ function showGate(msg) { $("#gate").hidden = false; $("#app").hidden = true; $("
 
 function render() {
   if (!data) return;
-  const inicial = Number(data.inicial || 0);
+  const meta = Number(data.goal || 0);
   const aportes = data.aportes || [];
   const saved = aportes.length ? aportes.reduce((s, a) => s + Number(a.amt || 0), 0) : Number(data.saved || 0);
-  const pct = inicial ? Math.min(100, saved / inicial * 100) : 0;
+  const pct = meta ? Math.min(100, saved / meta * 100) : 0;
   const fillW = Math.max(saved > 0 ? 2 : 0.8, pct);
 
   // proyección
-  const faltante = Math.max(0, inicial - saved);
+  const faltante = Math.max(0, meta - saved);
   const since = ymd(new Date(Date.now() - 90 * 864e5));
   const recientes = aportes.filter(a => a.d >= since);
   const desde = recientes.reduce((m, a) => a.d < m ? a.d : m, TODAY);
@@ -135,9 +135,9 @@ function render() {
   const ritmo = data.ritmoMeta != null ? Number(data.ritmoMeta) : (ritmoReal || Number((data.reframe && data.reframe.ritmo) || 0));
   const meses = ritmo > 0 && faltante > 0 ? Math.ceil(faltante / ritmo) : null;
   const fecha = meses != null ? monthYear(new Date(new Date().getFullYear(), new Date().getMonth() + meses, 1)) : null;
-  const fechaTxt = saved >= inicial && inicial > 0
-    ? "Llegamos a la inicial. Ahora, por el apartamento completo."
-    : meses != null ? `llegamos a la inicial en <b>${fecha}</b> <span class="meses">(~${meses} ${meses === 1 ? "mes" : "meses"})</span>`
+  const fechaTxt = saved >= meta && meta > 0
+    ? "¡Llegamos! A buscar nuestro apartamento."
+    : meses != null ? `llegamos en <b>${fecha}</b> <span class="meses">(~${meses} ${meses === 1 ? "mes" : "meses"})</span>`
     : "pon un ritmo para ver la fecha";
 
   const aporteListHtml = aportes.length
@@ -159,9 +159,8 @@ function render() {
   const debtStart = Math.max(debt, Number(data.debtStart || 0));
   const debtPaidPct = debtStart ? (debtStart - debt) / debtStart * 100 : 100;
 
-  // tabla calculada a partir de la inicial, la meta y el ritmo
-  const faltanteFull = Math.max(0, Number(data.goal || 0) - saved);
-  const montos = (data.tablaAhorros || [500, 1500, 3000]).slice();
+  // tabla calculada a partir de la meta, lo ahorrado y el ritmo
+  const montos = (data.tablaAhorros || [1000, 1500, 3000, 5000]).slice();
   if (ritmo > 0 && !montos.includes(ritmo)) montos.push(ritmo);
   montos.sort((a, b) => a - b);
 
@@ -186,7 +185,7 @@ function render() {
   const tablaHtml = montos.map(m => `<tr class="${m === ritmo ? "hot" : ""}">
     <td class="num">${fmt(m)}${m === ritmo ? ' <small class="tag-ritmo">nuestro ritmo</small>' : ""}</td>
     <td class="num">${faltante > 0 ? duracion(faltante / m) : "listo"}</td>
-    <td class="num">${duracion(faltanteFull / m)}</td></tr>`).join("");
+    <td class="num">${faltante > 0 ? monthYear(new Date(new Date().getFullYear(), new Date().getMonth() + Math.ceil(faltante / m), 1)) : "—"}</td></tr>`).join("");
 
   const weekHtml = (data.week || []).map(w => `<li data-week="${esc(w.id)}" class="${w.done ? "done" : ""}">
     <span class="chk">${ic("check")}</span><span class="txt"><b>${esc(w.title)}</b><span>${esc(w.note)}</span></span></li>`).join("");
@@ -202,13 +201,12 @@ function render() {
     </div>
     <div class="eyebrow">Nuestra estrella del norte</div>
     <h1>${esc(data.headline)}</h1>
-    <div class="goal"><span class="big">${fmt(inicial)}</span><span class="cap">la inicial: nuestra primera meta</span></div>
-    <div class="goal-sub">El apartamento cuesta <b>${fmt(data.goal)}</b>. Con la inicial lo compramos en planos y el resto va en cuotas.</div>
+    <div class="goal"><span class="big">${fmt(meta)}</span><span class="cap">${esc(data.goalCaption || "el apartamento, listo para mudarnos")}</span></div>
     <div class="prog">
       <div class="prog-track"><div class="prog-fill" style="width:${fillW}%"></div></div>
       <div class="prog-labels">
-        <span>Ahorrado <b>${fmt(saved)}</b> de ${fmt(inicial)}</span>
-        <span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> de la inicial</span>
+        <span>Ahorrado <b>${fmt(saved)}</b> de ${fmt(meta)}</span>
+        <span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> del apartamento</span>
       </div>
     </div>
     <div class="debt">
@@ -221,24 +219,24 @@ function render() {
 
   <div class="wrap">
     <section>
-      <div class="sec-head"><h2>No necesitamos la meta de golpe</h2>
+      <div class="sec-head"><h2>No es imposible: es un cronograma</h2>
         <p>${esc(data.reframe && data.reframe.intro)}</p></div>
       <div class="two">
-        <div class="card"><div class="k">Meta real de arranque</div>
-          <div class="v hl">${fmt(inicial)} <small>inicial aprox.</small></div>
-          <div class="note">Entrada para comprar en planos. Lo demás en cuotas mientras construyen.</div></div>
+        <div class="card"><div class="k">La meta</div>
+          <div class="v hl">${fmt(meta)} <small>apartamento hecho</small></div>
+          <div class="note">De contado: sin cuotas de construcción ni sorpresas de obra. Un solo número.</div></div>
         <div class="card"><div class="k">Lo que hace falta de verdad</div>
           <div class="v">${fmt(data.reframe && data.reframe.ritmo)}<small>/mes de ahorro</small></div>
-          <div class="note">A ese ritmo, la inicial sale en ${duracion(inicial / Number((data.reframe && data.reframe.ritmo) || 0))}. El reto no es el número: es llegar a ese ingreso.</div></div>
+          <div class="note">A ese ritmo, son ${duracion(meta / Number((data.reframe && data.reframe.ritmo) || 0))}. El reto no es el número: es subir el ingreso.</div></div>
       </div>
     </section>
 
     <section class="ahorro">
-      <div class="sec-head"><h2>Nuestro ahorro para la inicial</h2>
+      <div class="sec-head"><h2>Nuestro ahorro para el apartamento</h2>
         <p>Cada vez que guardemos algo, lo anotamos. Lo que no se fuga, se acerca.</p></div>
 
       <div class="save-top">
-        <div class="save-num"><b>${fmt(saved)}</b> <span>de ${fmt(inicial)} · ${pct.toFixed(pct < 10 ? 1 : 0)}%</span></div>
+        <div class="save-num"><b>${fmt(saved)}</b> <span>de ${fmt(meta)} · ${pct.toFixed(pct < 10 ? 1 : 0)}%</span></div>
         <div class="save-bar"><i style="width:${fillW}%"></i></div>
       </div>
 
@@ -275,7 +273,7 @@ function render() {
       <div class="sec-head"><h2>Cuánto tardamos, según cuánto ahorremos</h2>
         <p>La matemática no miente: el tiempo lo decide el ingreso, no apretarnos el cinturón.</p></div>
       <div class="tablewrap"><table>
-        <thead><tr><th>Ahorro por mes</th><th>Inicial</th><th>Apto completo</th></tr></thead>
+        <thead><tr><th>Ahorro por mes</th><th>Tiempo</th><th>Llegamos en</th></tr></thead>
         <tbody>${tablaHtml}</tbody></table></div>
       <p class="caption">Calculado con lo que ya llevamos ahorrado. Por eso la Fase 2 es todo: subir el ingreso convierte el sueño en fecha.</p>
     </section>
